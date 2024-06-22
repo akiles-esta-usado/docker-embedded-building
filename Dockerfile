@@ -21,9 +21,10 @@ USER root
 #######################################################################
 FROM common as base
 
-RUN --mount=type=bind,source=images/base,target=/images/base \
-    bash /images/base/base_install.sh && \
-    bash /images/base/python_packages.sh
+RUN --mount=type=bind,source=scripts/base,target=/scripts/base \
+    bash /scripts/base/install.sh \
+    && bash /scripts/base/python_packages.sh \
+    && bash /scripts/base/install_fwup.sh
 
 
 #######################################################################
@@ -39,7 +40,14 @@ RUN echo "Hello from builder"
 #######################################################################
 FROM base as embedded-builder
 
-RUN echo "Hello from embedded-builder"
+RUN useradd -m dev \
+    && echo "dev ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/dev
+USER dev
+
+COPY --chmod=755 scripts/embedded-builder/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
+# RUN --mount=type=bind,source=scripts/temporal,target=/scripts/temporal \
+#     bash /scripts/temporal/install_fwup.sh
 
 WORKDIR /home/dev
-USER dev
